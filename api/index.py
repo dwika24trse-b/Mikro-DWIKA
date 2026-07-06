@@ -1,10 +1,15 @@
 import os
 import sqlite3
 from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
 
 app = Flask(__name__, static_folder='../public', static_url_path='')
-CORS(app)
+
+@app.after_request
+def add_cors(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    return response
 
 SQLITE_DB_PATH = '/tmp/aquarium.db'
 
