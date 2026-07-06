@@ -2,8 +2,13 @@ import os
 import sqlite3
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import mysql.connector
-from mysql.connector import Error
+try:
+    import mysql.connector
+    from mysql.connector import Error
+    mysql_available = True
+except ImportError:
+    mysql_available = False
+
 
 app = Flask(__name__, static_folder='public', static_url_path='')
 CORS(app)
@@ -24,7 +29,7 @@ else:
 
 def get_db_connection():
     """Establish database connection. Connects to MySQL if configured, otherwise falls back to SQLite."""
-    if use_mysql:
+    if use_mysql and mysql_available:
         try:
             conn = mysql.connector.connect(
                 host=DB_HOST,
@@ -34,7 +39,7 @@ def get_db_connection():
             )
             if conn.is_connected():
                 return conn, "mysql"
-        except Error as e:
+        except Exception as e:
             print(f"Error connecting to MySQL: {e}. Falling back to SQLite...")
     
     # SQLite fallback
@@ -200,6 +205,15 @@ def get_sensor_data():
         
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    import traceback
+    return jsonify({
+        "status": "error",
+        "message": str(e),
+        "traceback": traceback.format_exc()
+    }), 500
 
 if __name__ == '__main__':
     # Determine port
