@@ -112,8 +112,14 @@ def init_db():
     cursor.close()
     conn.close()
 
-# Initialize database on startup
-init_db()
+db_initialized = False
+
+@app.before_request
+def setup_db():
+    global db_initialized
+    if not db_initialized:
+        init_db()
+        db_initialized = True
 
 @app.route('/')
 def index():
