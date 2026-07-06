@@ -7,7 +7,7 @@ try:
     import mysql.connector
     from mysql.connector import Error
     mysql_available = True
-except ImportError:
+except Exception:
     mysql_available = False
 
 # Initialize Flask. Since index.py is in the 'api' directory,
