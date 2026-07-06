@@ -1,9 +1,11 @@
 {
   "version": 2,
+  "builds": [
+    { "src": "api/data.py", "use": "@vercel/python" },
+    { "src": "public/**",   "use": "@vercel/static" }
+  ],
   "routes": [
-    { "src": "/api/data(.*)", "dest": "/api/data.py" },
-    { "src": "/",            "dest": "/public/index.html" },
-    { "src": "/(.*\\.js)",  "dest": "/public/$1" },
-    { "src": "/(.*\\.css)", "dest": "/public/$1" }
+    { "src": "/api/data", "dest": "api/data.py" },
+    { "src": "/(.*)",     "dest": "public/$1" }
   ]
 }
