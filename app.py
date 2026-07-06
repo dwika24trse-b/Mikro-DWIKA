@@ -15,7 +15,12 @@ DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
 DB_NAME = os.environ.get('DB_NAME', '')
 
 use_mysql = all([DB_HOST, DB_USER, DB_NAME])
-SQLITE_DB_PATH = 'aquarium.db'
+
+# Vercel serverless has a read-only filesystem except for /tmp
+if os.environ.get('VERCEL'):
+    SQLITE_DB_PATH = '/tmp/aquarium.db'
+else:
+    SQLITE_DB_PATH = 'aquarium.db'
 
 def get_db_connection():
     """Establish database connection. Connects to MySQL if configured, otherwise falls back to SQLite."""
@@ -70,6 +75,34 @@ def init_db():
         """)
         conn.commit()
         print(f"Initialized SQLite database at '{SQLITE_DB_PATH}' successfully.")
+        
+        # Auto-seed initial data for SQLite if empty, so the hosted site has immediate data
+        cursor.execute("SELECT COUNT(*) FROM sensor_data")
+        count = cursor.fetchone()[0]
+        if count == 0:
+            print("Seeding SQLite database with initial data...")
+            import math
+            import random
+            from datetime import datetime, timedelta
+            
+            now = datetime.utcnow()
+            for i in range(30):
+                # Backdate timestamps so they look like historical data
+                timestamp = (now - timedelta(minutes=30-i)).strftime('%Y-%m-%d %H:%M:%S')
+                sine_val = (i % 60) / 60.0 * 2 * 3.14159
+                
+                temperature = round(25.0 + 1.5 * math.sin(sine_val) + random.uniform(-0.15, 0.15), 2)
+                ph = round(7.3 + 0.3 * math.cos(sine_val * 1.5) + random.uniform(-0.05, 0.05), 2)
+                turbidity = round(92.0 - 5.0 * abs(math.sin(sine_val / 2.0)) + random.uniform(-0.5, 0.5), 2)
+                if turbidity > 100: turbidity = 100.0
+                water_level = round(82.0 + 3.0 * math.sin(sine_val / 4.0) + random.uniform(-0.2, 0.2), 2)
+                
+                cursor.execute("""
+                    INSERT INTO sensor_data (temperature, ph, turbidity, water_level, created_at)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (temperature, ph, turbidity, water_level, timestamp))
+            conn.commit()
+            print("SQLite database seeded successfully.")
         
     cursor.close()
     conn.close()
