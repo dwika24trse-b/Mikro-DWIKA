@@ -46,7 +46,14 @@ def ensure_table():
         conn.commit()
     conn.close()
 
-ensure_table()
+_db_ready = False
+
+@app.before_request
+def setup():
+    global _db_ready
+    if not _db_ready:
+        ensure_table()
+        _db_ready = True
 
 @app.route('/')
 def index():
